@@ -86,11 +86,38 @@ rmt mat
     | otherwise = map head mat : rmt (map tail mat)
 
 -- 2.4.4. Write a function rminv :: Realmatrix -> Realmatrix to compute the matrix inverse.
+-- Function to create an identity matrix of size n
+identityMatrix :: Int -> Realmatrix
+identityMatrix n = [ [fromIntegral (if i == j then 1 else 0) | j <- [1..n]] | i <- [1..n]]
+
+-- Function to augment a matrix with another matrix
+augmentMatrix :: Realmatrix -> Realmatrix -> Realmatrix
+augmentMatrix mat1 mat2 = zipWith (++) mat1 mat2
+
+-- Helper function to perform row operations
+rowOperation :: Realmatrix -> Int -> Int -> Double -> Realmatrix
+rowOperation mat row1 row2 factor =
+    [ if i == row2 then zipWith (-) row (map (* factor) (mat !! row1)) else row
+    | (i, row) <- zip [0..] mat ]
+
+-- Function to perform Gauss-Jordan elimination
+gaussJordan :: Realmatrix -> Realmatrix
+gaussJordan mat = foldl eliminationStep mat [0..n-1]
+    where
+        n = length mat
+        eliminationStep m k =
+            let pivot = (m !! k !! k)
+                m' = [ if i == k then map (/ pivot) (m !! k) else m !! i | i <- [0..n-1]]
+            in foldl (\acc i -> if i == k then acc else rowOperation acc k i (acc !! i !! k)) m' [0..n-1]
+
+-- Main function to calculate the inverse
 rminv :: Realmatrix -> Realmatrix
-rminv [] = []
-rminv mat
-    | all null mat = [] 
-    | otherwise = mat
+rminv mat =
+    let n = length mat
+        identity = identityMatrix n
+        augmented = augmentMatrix mat identity
+        reduced = gaussJordan augmented
+    in map (drop n) reduced
 
 -- 2.5 Simple functions on numbers:
 -- Define a function, collatz :: [Int] -> Int, that takes in a list of starting numbers and re-
